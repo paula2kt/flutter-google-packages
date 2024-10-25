@@ -97,13 +97,18 @@ class CameraPlugin extends CameraPlatform {
       }
 
       // Request video permissions only.
-      final html.MediaStream cameraStream =
-          await _cameraService.getMediaStreamForOptions(const CameraOptions());
-
-      // Release the camera stream used to request video permissions.
-      cameraStream
-          .getVideoTracks()
-          .forEach((html.MediaStreamTrack videoTrack) => videoTrack.stop());
+      html.MediaStream cameraStream;
+      try {
+        cameraStream = await _cameraService
+            .getMediaStreamForOptions(const CameraOptions());
+        // Release the camera stream used to request video permissions.
+        cameraStream
+            .getVideoTracks()
+            .forEach((html.MediaStreamTrack videoTrack) => videoTrack.stop());
+      } catch (e) {
+        //c pas grave la liste est construite ensuite
+        print('First stream error : $e');
+      }
 
       // Request available media devices.
       final List<dynamic> devices = await mediaDevices.enumerateDevices();
@@ -125,9 +130,16 @@ class CameraPlugin extends CameraPlatform {
       for (final html.MediaDeviceInfo videoInputDevice in videoInputDevices) {
         // Get the video stream for the current video input device
         // to later use for the available video tracks.
-        final html.MediaStream videoStream = await _getVideoStreamForDevice(
-          videoInputDevice.deviceId!,
-        );
+        html.MediaStream videoStream;
+        try {
+          videoStream = await _getVideoStreamForDevice(
+            videoInputDevice.deviceId!,
+          );
+        } catch (e) {
+          print(
+              'camera is allready used id:${videoInputDevice.deviceId!} : $e');
+          continue;
+        }
 
         // Get all video tracks in the video stream
         // to later extract the lens direction from the first track.
